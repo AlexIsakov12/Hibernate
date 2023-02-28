@@ -3,9 +3,7 @@ package jm.task.core.jdbc.dao;
 import jm.task.core.jdbc.model.User;
 import org.hibernate.Session;
 
-
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 import static jm.task.core.jdbc.util.Util.getSessionFactory;
@@ -20,14 +18,14 @@ public class UserDaoHibernateImpl implements UserDao {
     public void createUsersTable() {
         try (Session session = getSessionFactory().openSession()) {
             session.beginTransaction();
-            session.createSQLQuery("create table USERS\n" +
+            session.createSQLQuery("create table IF NOT EXISTS USERS\n" +
                     "(\n" +
                     "    id       bigint auto_increment\n" +
                     "        primary key,\n" +
                     "    name     varchar(255) null,\n" +
                     "    lastName varchar(255) null,\n" +
                     "    age      tinyint      null\n" +
-                    ")");
+                    ")").executeUpdate();
             session.getTransaction().commit();
             session.close();
         } catch (Exception e) {
@@ -40,7 +38,7 @@ public class UserDaoHibernateImpl implements UserDao {
     public void dropUsersTable() {
         try (Session session = getSessionFactory().openSession()) {
             session.beginTransaction();
-            session.createSQLQuery("DROP TABLE IF EXISTS USERS");
+            session.createSQLQuery("DROP TABLE IF EXISTS USERS").executeUpdate();
             session.getTransaction().commit();
             session.close();
         } catch (Exception e) { e.printStackTrace(); }
@@ -76,12 +74,11 @@ public class UserDaoHibernateImpl implements UserDao {
     @Override
     public List<User> getAllUsers() {
         List<User> users = null;
+
         try (Session session = getSessionFactory().openSession()) {
-            CriteriaBuilder builder = session.getCriteriaBuilder();
-            CriteriaQuery<User> criteria = builder.createQuery(User.class);
-            criteria.from(User.class);
             session.beginTransaction();
-            users = session.createQuery(criteria).list();
+            TypedQuery<User> typedQuery = session.createQuery("from User", User.class);
+            users = typedQuery.getResultList();
             session.getTransaction().commit();
             session.close();
         } catch (Exception e) {
